@@ -63,6 +63,8 @@ void StartAudioTask(void *argument);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define CS43L22_RESET_Pin GPIO_PIN_4
+#define CS43L22_RESET_GPIO_Port GPIOD
 
 /* USER CODE BEGIN Private defines */
 

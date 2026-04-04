@@ -25,6 +25,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "CS43L22_Speaker.h"
+#include "MP45DT02_microphone.h"
 
 /* USER CODE END Includes */
 
@@ -51,7 +53,7 @@
 osThreadId_t pcmDataHandle;
 const osThreadAttr_t pcmData_attributes = {
   .name = "pcmData",
-  .stack_size = 512 * 4,
+  .stack_size = 1024 * 4,
   .priority = (osPriority_t) osPriorityRealtime,
 };
 /* Definitions for pcmFFT */
@@ -142,11 +144,60 @@ void MX_FREERTOS_Init(void) {
 void start_pcmData(void *argument)
 {
   /* USER CODE BEGIN start_pcmData */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
+
+	char print_buf[64];
+
+	// 1. Init Audio settings
+	SetAudioData();
+
+	// 2. Get data for thread and select temporary PDM buffer
+	AudioTaskArgs_t *args = GetAudioArgs();
+	uint16_t *pPDMdata = NULL;
+
+	// 3. Init DAC Codec
+	if (CS43L22_Init() != HAL_OK)
+		{
+		strcpy(print_buf, "Codec initialization failed\r\n");
+			HAL_UART_Transmit(args->uartHandle, (uint8_t *)print_buf, strlen(print_buf), HAL_MAX_DELAY);
+
+			// Trap thread
+			while(1){
+				osDelay(1000);
+			}
+		}
+
+
+	// 4. Start Codec (DMA transmission)
+
+	//uint16_t PcmCodecBuffer[16];
+	//HAL_I2S_Transmit_DMA(CS43L22_I2S_HANDLE, PcmCodecBuffer, Size)
+
+	/* Infinite loop */
+
+	for(;;){
+
+		if(osSemaphoreAcquire(pdmDataReadyHandle, osWaitForever) == osOK){
+
+			// select PDM data for processing
+			pPDMdata = ( *(args->pFullPdmBuffer) == 0) ? args->pdm_buffer : &(args->pdm_buffer[ (args->pdm_buffer_size) / 2]);
+
+			// and process data
+			PDM_Filter(pPDMdata, args->pcm_buffer, (args->FilterHandler));
+
+			// wait for previous transfer
+			if(osSemaphoreAcquire(TXuartHandle, 10) == osOK)
+			{
+				// for printing values
+				sprintf(print_buf, "Audio: %d\r\n", (int16_t)args->pcm_buffer[0]);
+				HAL_UART_Transmit_DMA(args->uartHandle, (uint8_t *)print_buf, strlen(print_buf));
+
+				// one-shot DMA transfer							// UART sends 8-bit chunks but my data is 16-bit chunk
+//				HAL_UART_Transmit_DMA(args->uartHandle, (uint8_t *)(args -> pcm_buffer), (args->pcm_buffer_size) * 2);
+			}
+		}
+	  }
+
+
   /* USER CODE END start_pcmData */
 }
 
@@ -161,37 +212,11 @@ void start_pcmFFT(void *argument)
 {
   /* USER CODE BEGIN start_pcmFFT */
 
-	// 1. Init Audio settings
-	SetAudioData();
-
-	// 2. Get data for thread and select temporary PDM buffer
-	AudioTaskArgs_t *args = GetAudioArgs();
-	uint16_t *pPDMdata = NULL;
-
 	/* Infinite loop */
-  for(;;)
-  {
-	  if(osSemaphoreAcquire(pdmDataReadyHandle, osWaitForever) == osOK)
-		{
-			// select PDM data for processing
-			pPDMdata = ( *(args->pFullPdmBuffer) == 0) ? args->pdm_buffer : &(args->pdm_buffer[ (args->pdm_buffer_size) / 2]);
-
-			// and process data
-			PDM_Filter(pPDMdata, args->pcm_buffer, (args->FilterHandler));
-
-			// wait for previous transfer
-			if(osSemaphoreAcquire(TXuartHandle, 10) == osOK)
-			{
-				// for printing values
-				/*char print_buf[32];
-				sprintf(print_buf, "Audio: %d\r\n", (int16_t)args->pcm_buffer[0]);
-				HAL_UART_Transmit_DMA(args->uartHandle, (uint8_t *)print_buf, strlen(print_buf));*/
-
-				// one-shot DMA transfer							// UART sends 8-bit chunks but my data is 16-bit chunk
-				HAL_UART_Transmit_DMA(args->uartHandle, (uint8_t *)(args -> pcm_buffer), (args->pcm_buffer_size) * 2);
-			}
-		}
-  }
+	  for(;;)
+	  {
+	    osDelay(1);
+	  }
   /* USER CODE END start_pcmFFT */
 }
 

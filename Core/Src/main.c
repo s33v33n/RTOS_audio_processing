@@ -29,6 +29,10 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#define ARM_MATH_CM4
+#include "arm_math.h"
+
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -38,6 +42,15 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+
+#define FFT_BUFFER_SIZE 2048
+
+arm_rfft_fast_instance_f32 fftHandler;
+
+float fftBuffIn[FFT_BUFFER_SIZE];
+float fftBuffOut[FFT_BUFFER_SIZE];
+
+uint8_t fftCmplt = 0;
 
 /* USER CODE END PD */
 
@@ -82,6 +95,9 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+
+  // FFT Init
+  arm_rfft_fast_init_f32(&fftHandler, FFT_BUFFER_SIZE);
 
   /* USER CODE END Init */
 

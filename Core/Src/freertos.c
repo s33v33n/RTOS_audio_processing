@@ -145,7 +145,15 @@ void start_pcmData(void *argument)
 {
   /* USER CODE BEGIN start_pcmData */
 
-	char print_buf[64];
+	// 0. Variables
+	char print_buf[64]; // help variable
+
+	uint16_t uart_tx_buffer[16];   						// MONO tx UART buffer
+	memset(uart_tx_buffer, 0, sizeof(uart_tx_buffer));	// clear buffer
+
+	uint16_t stereo_tx_buffer[32]; 							// STEREO tx DAC buffer
+	memset(stereo_tx_buffer, 0, sizeof(stereo_tx_buffer));	// clear buffer
+
 
 	// 1. Init Audio settings
 	SetAudioData();
@@ -166,38 +174,43 @@ void start_pcmData(void *argument)
 			}
 		}
 
-
 	// 4. Start Codec (DMA transmission)
-
-	//uint16_t PcmCodecBuffer[16];
-	//HAL_I2S_Transmit_DMA(CS43L22_I2S_HANDLE, PcmCodecBuffer, Size)
+	HAL_I2S_Transmit_DMA(CS43L22_I2S_HANDLE, (uint16_t *)stereo_tx_buffer, (args->pcm_buffer_size) * 2);
 
 	/* Infinite loop */
-
 	for(;;){
 
 		if(osSemaphoreAcquire(pdmDataReadyHandle, osWaitForever) == osOK){
 
-			// select PDM data for processing
+			// 1. select PDM data for processing
 			pPDMdata = ( *(args->pFullPdmBuffer) == 0) ? args->pdm_buffer : &(args->pdm_buffer[ (args->pdm_buffer_size) / 2]);
 
-			// and process data
+			// 2. and process data (MONO)
 			PDM_Filter(pPDMdata, args->pcm_buffer, (args->FilterHandler));
 
-			// wait for previous transfer
+			// 3. MONO -> STEREO & DAC data send (DMA in circular mode)
+			for (int i = 0; i < args->pcm_buffer_size; i++) {
+				stereo_tx_buffer[i * 2]     = args->pcm_buffer[i]; // Left
+				stereo_tx_buffer[i * 2 + 1] = args->pcm_buffer[i]; // Right
+			}
+
 			if(osSemaphoreAcquire(TXuartHandle, 10) == osOK)
 			{
-				// for printing values
-				sprintf(print_buf, "Audio: %d\r\n", (int16_t)args->pcm_buffer[0]);
-				HAL_UART_Transmit_DMA(args->uartHandle, (uint8_t *)print_buf, strlen(print_buf));
 
-				// one-shot DMA transfer							// UART sends 8-bit chunks but my data is 16-bit chunk
-//				HAL_UART_Transmit_DMA(args->uartHandle, (uint8_t *)(args -> pcm_buffer), (args->pcm_buffer_size) * 2);
+				// UART sends 8-bit chunks but my data is 16-bit chunk
+				memcpy(uart_tx_buffer, args->pcm_buffer, (args->pcm_buffer_size) * 2);
+
+				// Synchronize
+				uint16_t sync_word = 0xAAAA;
+				HAL_UART_Transmit(args->uartHandle, (uint8_t*)&sync_word, 2, HAL_MAX_DELAY);
+
+				// one-shot DMA transfer
+				HAL_UART_Transmit_DMA(args->uartHandle, (uint8_t *)uart_tx_buffer, (args->pcm_buffer_size) * 2);
 			}
+
 		}
-	  }
 
-
+	}
   /* USER CODE END start_pcmData */
 }
 

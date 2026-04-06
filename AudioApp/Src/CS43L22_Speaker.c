@@ -73,6 +73,8 @@ HAL_StatusTypeDef CS43L22_Init(void){
 		}
 	}
 
+
+
 	/* 4. Required initialization */
 	Init_status |= CS43L22_RegWrite(0x00, 0x99);
 	Init_status |= CS43L22_RegWrite(0x47, 0x80);

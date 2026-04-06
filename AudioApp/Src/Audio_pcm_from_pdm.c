@@ -7,7 +7,7 @@
 #define OUT_CHN 1
 
 // double buffering for processing PDM data
-#define PDM_BUFFER_SIZE 128
+#define PDM_BUFFER_SIZE 256
 
 // only one buffer for PCM data
 #define PCM_BUFFER_SIZE 16
@@ -34,7 +34,7 @@ void PDM_Init(uint32_t AudioFreq, uint32_t in_channels, uint32_t out_channels)
 
     // Init PDM filters
     PDM_FilterHandler.bit_order = PDM_FILTER_BIT_ORDER_LSB;
-    PDM_FilterHandler.endianness = PDM_FILTER_ENDIANNESS_LE;
+    PDM_FilterHandler.endianness = PDM_FILTER_ENDIANNESS_BE;
     PDM_FilterHandler.high_pass_tap = 2122358088;
     PDM_FilterHandler.in_ptr_channels = in_channels;
     PDM_FilterHandler.out_ptr_channels = out_channels;
@@ -43,7 +43,7 @@ void PDM_Init(uint32_t AudioFreq, uint32_t in_channels, uint32_t out_channels)
     // PDM config phase
     PDM_FilterConfig.output_samples_number = AudioFreq / 1000;
     PDM_FilterConfig.mic_gain = 24;
-    PDM_FilterConfig.decimation_factor = PDM_FILTER_DEC_FACTOR_64;
+    PDM_FilterConfig.decimation_factor = PDM_FILTER_DEC_FACTOR_128;
     PDM_Filter_setConfig(&PDM_FilterHandler, &PDM_FilterConfig);
 }
 

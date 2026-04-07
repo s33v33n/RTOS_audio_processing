@@ -27,6 +27,7 @@
 /* USER CODE BEGIN Includes */
 #include "CS43L22_Speaker.h"
 #include "MP45DT02_microphone.h"
+#include "fft_setup.h"
 
 /* USER CODE END Includes */
 
@@ -37,6 +38,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+
+
 
 /* USER CODE END PD */
 
@@ -73,6 +76,11 @@ osSemaphoreId_t TXuartHandle;
 const osSemaphoreAttr_t TXuart_attributes = {
   .name = "TXuart"
 };
+/* Definitions for fftPcmDataReady */
+osSemaphoreId_t fftPcmDataReadyHandle;
+const osSemaphoreAttr_t fftPcmDataReady_attributes = {
+  .name = "fftPcmDataReady"
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -104,6 +112,9 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of TXuart */
   TXuartHandle = osSemaphoreNew(1, 1, &TXuart_attributes);
+
+  /* creation of fftPcmDataReady */
+  fftPcmDataReadyHandle = osSemaphoreNew(1, 1, &fftPcmDataReady_attributes);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
@@ -187,6 +198,7 @@ void start_pcmData(void *argument)
 
 			// 2. and process data (MONO)
 			PDM_Filter(pPDMdata, args->pcm_buffer, (args->FilterHandler));
+			osSemaphoreRelease(fftPcmDataReadyHandle);
 
 			// 3. MONO -> STEREO & DAC data send (DMA in circular mode)
 			for (int i = 0; i < args->pcm_buffer_size; i++) {
@@ -194,22 +206,20 @@ void start_pcmData(void *argument)
 				stereo_tx_buffer[i * 2 + 1] = args->pcm_buffer[i]; // Right
 			}
 
-			if(osSemaphoreAcquire(TXuartHandle, 10) == osOK)
-			{
-
-				// UART sends 8-bit chunks but my data is 16-bit chunk
-				memcpy(uart_tx_buffer, args->pcm_buffer, (args->pcm_buffer_size) * 2);
-
-				// Synchronize
-				uint16_t sync_word = 0xAAAA;
-				HAL_UART_Transmit(args->uartHandle, (uint8_t*)&sync_word, 2, HAL_MAX_DELAY);
-
-				// one-shot DMA transfer
-				HAL_UART_Transmit_DMA(args->uartHandle, (uint8_t *)uart_tx_buffer, (args->pcm_buffer_size) * 2);
-			}
-
+//			if(osSemaphoreAcquire(TXuartHandle, 10) == osOK)
+//			{
+//
+//				// UART sends 8-bit chunks but my data is 16-bit chunk
+//				memcpy(uart_tx_buffer, args->pcm_buffer, (args->pcm_buffer_size) * 2);
+//
+//				// Synchronize
+//				uint16_t sync_word = 0xAAAA;
+//				HAL_UART_Transmit(args->uartHandle, (uint8_t*)&sync_word, 2, HAL_MAX_DELAY);
+//
+//				// one-shot DMA transfer
+//				HAL_UART_Transmit_DMA(args->uartHandle, (uint8_t *)uart_tx_buffer, (args->pcm_buffer_size) * 2);
+//			}
 		}
-
 	}
   /* USER CODE END start_pcmData */
 }
@@ -225,10 +235,62 @@ void start_pcmFFT(void *argument)
 {
   /* USER CODE BEGIN start_pcmFFT */
 
+	// 1. FFT Init
+	fft_Init();
+	fftArgs_t *args = GetfftArgs();
+
+
+	uint16_t fftIndex = 0;
+
 	/* Infinite loop */
 	  for(;;)
 	  {
-	    osDelay(1);
+		  if(osSemaphoreAcquire(fftPcmDataReadyHandle, osWaitForever) == osOK){
+
+			  // Filling the FFT buffer
+			  for(uint8_t i=0; i < args -> pcm_buffer_size; i++){
+				  args -> fftBuffIn[fftIndex] = (float)((int16_t)args -> source_pcm_data[i]);
+				  fftIndex++;
+
+
+				  /* When FFT buffer is full -> count FFT
+				   * FFT is computed in MONO format - doesn't need to get
+				   * rid of doubled samples
+				   * */
+				  if(fftIndex >= (args -> fft_buffer_size)){
+
+					  // 1. Calculate fft values (input: read audio data, output: complex number)
+					  arm_rfft_fast_f32(args -> fftHandler, args -> fftBuffIn, args -> fftComplex, 0);
+
+					  // 2. Calculate Magnitude from complex samples
+					  for(uint16_t i=0; i < (args -> fft_buffer_size) / 2; i++){
+
+						  float real = args -> fftComplex[2*i] * args -> fftComplex[2 *i];
+						  float imag = args -> fftComplex[2*i + 1] * args -> fftComplex[2 *i + 1];
+
+						  args -> fftBuffOut[i] = sqrtf(real + imag);
+					  }
+
+					  if(osSemaphoreAcquire(TXuartHandle, 10) == osOK)
+					  {
+					      // A. Unikalny znacznik synchronizujący dla widma (żeby odróżnić od zwykłego audio)
+					      uint16_t sync_word = 0xBBBB;
+					      HAL_UART_Transmit(args->uartHandle, (uint8_t*)&sync_word, 2, HAL_MAX_DELAY);
+
+					      // B. Obliczamy ilość bajtów do wysłania
+					      // Mamy (fft_buffer_size / 2) prążków, a każdy to zmienna float (4 bajty)
+					      uint16_t bytes_to_send = ((args->fft_buffer_size) / 2) * sizeof(float);
+
+					      // C. Wysyłamy całą paczkę widma w tle za pomocą DMA
+					      HAL_UART_Transmit_DMA(args->uartHandle, (uint8_t *)(args->fftBuffOut), bytes_to_send);
+					  }
+
+					  fftIndex = 0;
+				  }
+			 }
+
+		  }
+
 	  }
   /* USER CODE END start_pcmFFT */
 }

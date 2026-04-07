@@ -32,11 +32,16 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <string.h>
+#include <stdint.h>
 #include <stdio.h>
 #include "cmsis_os2.h"
 #include "pdm2pcm_glo.h"
 #include "Audio_pcm_from_pdm.h"
 #include "MP45DT02_microphone.h"
+
+#define ARM_MATH_CM4
+#include "arm_math.h"
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -67,6 +72,8 @@ void StartAudioTask(void *argument);
 #define CS43L22_RESET_GPIO_Port GPIOD
 
 /* USER CODE BEGIN Private defines */
+
+// for FreeRTOS
 
 /* USER CODE END Private defines */
 

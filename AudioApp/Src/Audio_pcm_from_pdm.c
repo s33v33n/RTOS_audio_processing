@@ -41,8 +41,8 @@ void PDM_Init(uint32_t AudioFreq, uint32_t in_channels, uint32_t out_channels)
     PDM_Filter_Init(&PDM_FilterHandler);
 
     // PDM config phase
-    PDM_FilterConfig.output_samples_number = AudioFreq / 1000;
-    PDM_FilterConfig.mic_gain = 24;
+    PDM_FilterConfig.output_samples_number = (AudioFreq / 1000) * 2;
+    PDM_FilterConfig.mic_gain = 8;
     PDM_FilterConfig.decimation_factor = PDM_FILTER_DEC_FACTOR_64;
     PDM_Filter_setConfig(&PDM_FilterHandler, &PDM_FilterConfig);
 }

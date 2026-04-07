@@ -159,10 +159,10 @@ void start_pcmData(void *argument)
 	// 0. Variables
 	char print_buf[64]; // help variable
 
-	uint16_t uart_tx_buffer[16];   						// MONO tx UART buffer
+	int16_t uart_tx_buffer[32];   						// MONO tx UART buffer
 	memset(uart_tx_buffer, 0, sizeof(uart_tx_buffer));	// clear buffer
 
-	uint16_t stereo_tx_buffer[32]; 							// STEREO tx DAC buffer
+	int16_t stereo_tx_buffer[128]; 							// STEREO tx DAC buffer
 	memset(stereo_tx_buffer, 0, sizeof(stereo_tx_buffer));	// clear buffer
 
 
@@ -206,6 +206,8 @@ void start_pcmData(void *argument)
 				stereo_tx_buffer[i * 2 + 1] = args->pcm_buffer[i]; // Right
 			}
 
+			//HAL_I2S_Transmit_DMA(CS43L22_I2S_HANDLE, (uint16_t *)stereo_tx_buffer, (args->pcm_buffer_size) * 2);
+
 //			if(osSemaphoreAcquire(TXuartHandle, 10) == osOK)
 //			{
 //
@@ -220,6 +222,7 @@ void start_pcmData(void *argument)
 //				HAL_UART_Transmit_DMA(args->uartHandle, (uint8_t *)uart_tx_buffer, (args->pcm_buffer_size) * 2);
 //			}
 		}
+
 	}
   /* USER CODE END start_pcmData */
 }
@@ -273,15 +276,11 @@ void start_pcmFFT(void *argument)
 
 					  if(osSemaphoreAcquire(TXuartHandle, 10) == osOK)
 					  {
-					      // A. Unikalny znacznik synchronizujący dla widma (żeby odróżnić od zwykłego audio)
 					      uint16_t sync_word = 0xBBBB;
 					      HAL_UART_Transmit(args->uartHandle, (uint8_t*)&sync_word, 2, HAL_MAX_DELAY);
 
-					      // B. Obliczamy ilość bajtów do wysłania
-					      // Mamy (fft_buffer_size / 2) prążków, a każdy to zmienna float (4 bajty)
 					      uint16_t bytes_to_send = ((args->fft_buffer_size) / 2) * sizeof(float);
 
-					      // C. Wysyłamy całą paczkę widma w tle za pomocą DMA
 					      HAL_UART_Transmit_DMA(args->uartHandle, (uint8_t *)(args->fftBuffOut), bytes_to_send);
 					  }
 

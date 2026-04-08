@@ -1,16 +1,15 @@
-#include "Audio_pcm_from_pdm.h"
-#include "MP45DT02_microphone.h"
+#include "AudioApp.h"
 
-// Audio settings
-#define AUDIO_FREQ 16000
-#define IN_CHN 1
-#define OUT_CHN 1
+// // Audio settings
+// #define AUDIO_FREQ 16000
+// #define IN_CHN 1
+// #define OUT_CHN 1
 
-// double buffering for processing PDM data
-#define PDM_BUFFER_SIZE 256
+// // double buffering for processing PDM data
+// #define PDM_BUFFER_SIZE 256
 
-// only one buffer for PCM data
-#define PCM_BUFFER_SIZE 16
+// // only one buffer for PCM data
+// #define PCM_BUFFER_SIZE 16
 
 uint16_t pdm_buffer[PDM_BUFFER_SIZE];
 uint16_t pcm_buffer[PCM_BUFFER_SIZE];
@@ -41,8 +40,9 @@ void PDM_Init(uint32_t AudioFreq, uint32_t in_channels, uint32_t out_channels)
     PDM_Filter_Init(&PDM_FilterHandler);
 
     // PDM config phase
-    PDM_FilterConfig.output_samples_number = (AudioFreq / 1000) * 2;
-    PDM_FilterConfig.mic_gain = 8;
+    // PDM_FilterConfig.output_samples_number = (AudioFreq / 1000) * 2;
+    PDM_FilterConfig.output_samples_number = PCM_BUFFER_SIZE;
+    PDM_FilterConfig.mic_gain = 14;
     PDM_FilterConfig.decimation_factor = PDM_FILTER_DEC_FACTOR_64;
     PDM_Filter_setConfig(&PDM_FilterHandler, &PDM_FilterConfig);
 }
@@ -52,9 +52,6 @@ void SetAudioData(void){
 
 	// filter initialization
 	PDM_Init(AUDIO_FREQ, IN_CHN, OUT_CHN);
-
-	// Start Microphone
-	MP45DT02_Start(pdm_buffer, PDM_BUFFER_SIZE);
 
 	// Box to pass to RTOS thread
 	audioArgs.pdm_buffer_size = PDM_BUFFER_SIZE;
@@ -67,18 +64,13 @@ void SetAudioData(void){
 	audioArgs.uartSem = TXuartHandle;
 	audioArgs.uartHandle = &huart2;
 	audioArgs.FilterHandler = &PDM_FilterHandler;
+
+    // Start Microphone
+	MP45DT02_Start(pdm_buffer, PDM_BUFFER_SIZE);
 }
 
 
 AudioTaskArgs_t *GetAudioArgs(void){
 
 	return &audioArgs;
-}
-
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
-{
-    if (huart->Instance == USART2)
-    {
-        osSemaphoreRelease(TXuartHandle);
-    }
 }

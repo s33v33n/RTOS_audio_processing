@@ -1,8 +1,7 @@
 #ifndef FFT_SETUP_H
 #define FFT_SETUP_H
 
-#include "main.h"
-#include <stdint.h>
+// Includes are centralized in AudioApp.h
 
 
 // Box to be passed to thread

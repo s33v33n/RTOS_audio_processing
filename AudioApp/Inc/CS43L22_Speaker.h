@@ -1,9 +1,9 @@
 #ifndef CS43L22_H
 #define CS43L22_H
 
-#include "main.h"
+// Includes are centralized in AudioApp.h
 
-// declaration is in another file
+
 extern I2C_HandleTypeDef hi2c1;
 extern I2S_HandleTypeDef hi2s3;
 
@@ -20,8 +20,9 @@ extern I2S_HandleTypeDef hi2s3;
 
 HAL_StatusTypeDef CS43L22_RegWrite(uint8_t regAddr, uint8_t regData);
 HAL_StatusTypeDef CS43L22_RegRead(uint8_t regAddr, uint8_t *regData);
-
 HAL_StatusTypeDef CS43L22_Init(void);
+
+
 void CS43L22_Reset(void);
 
 

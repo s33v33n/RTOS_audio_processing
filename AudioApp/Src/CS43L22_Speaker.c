@@ -1,7 +1,6 @@
-#include "CS43L22_Speaker.h"
-#include "main.h"
+#include "AudioApp.h"
 
-#define ONE_BYTE 1
+// #define ONE_BYTE 1
 
 HAL_StatusTypeDef CS43L22_RegWrite(uint8_t regAddr, uint8_t regData){
 

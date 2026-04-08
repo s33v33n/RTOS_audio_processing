@@ -25,9 +25,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "CS43L22_Speaker.h"
-#include "MP45DT02_microphone.h"
-#include "fft_setup.h"
+#include "AudioApp.h"
 
 /* USER CODE END Includes */
 
@@ -38,8 +36,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
-
 
 /* USER CODE END PD */
 
@@ -162,7 +158,7 @@ void start_pcmData(void *argument)
 	int16_t uart_tx_buffer[32];   						// MONO tx UART buffer
 	memset(uart_tx_buffer, 0, sizeof(uart_tx_buffer));	// clear buffer
 
-	int16_t stereo_tx_buffer[128]; 							// STEREO tx DAC buffer
+	int16_t stereo_tx_buffer[PCM_BUFFER_SIZE * 2]; 							// STEREO tx DAC buffer
 	memset(stereo_tx_buffer, 0, sizeof(stereo_tx_buffer));	// clear buffer
 
 
@@ -257,8 +253,8 @@ void start_pcmFFT(void *argument)
 
 
 				  /* When FFT buffer is full -> count FFT
-				   * FFT is computed in MONO format - doesn't need to get
-				   * rid of doubled samples
+				   * FFT is computed in MONO format - doesn't need to
+				   * get rid of doubled samples
 				   * */
 				  if(fftIndex >= (args -> fft_buffer_size)){
 

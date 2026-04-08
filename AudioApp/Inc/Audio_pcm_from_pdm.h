@@ -1,9 +1,7 @@
 #ifndef AUDIO_PCM_FROM_PDM_H
 #define AUDIO_PCM_FROM_PDM_H
 
-#include <stdint.h>
-#include "main.h"          // Brings in HAL
-
+// Includes are centralized in AudioApp.h
 
 // Box to be passed to thread
 typedef struct{

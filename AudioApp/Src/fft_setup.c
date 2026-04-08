@@ -1,11 +1,10 @@
-#include "fft_setup.h"
-#include "Audio_pcm_from_pdm.h"
+#include "AudioApp.h"
 
 /* Required (lost pcm buffer) */
-extern uint16_t pcm_buffer[16];
+extern uint16_t pcm_buffer[PCM_BUFFER_SIZE];
 
-#define PCM_BUFFER_SIZE 16
-#define FFT_BUFFER_SIZE 1024
+// #define PCM_BUFFER_SIZE 16
+// #define FFT_BUFFER_SIZE 1024
 
 float fftBuffIn[FFT_BUFFER_SIZE];
 float fftBuffComplex[FFT_BUFFER_SIZE];

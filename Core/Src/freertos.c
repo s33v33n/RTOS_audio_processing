@@ -152,37 +152,11 @@ void start_pcmData(void *argument)
 {
   /* USER CODE BEGIN start_pcmData */
 
-	// 0. Variables
-	char print_buf[64]; // help variable
+	// My whole AudioApp initialization
+	AudioApp_Init();
 
-	int16_t uart_tx_buffer[32];   						// MONO tx UART buffer
-	memset(uart_tx_buffer, 0, sizeof(uart_tx_buffer));	// clear buffer
-
-	int16_t stereo_tx_buffer[PCM_BUFFER_SIZE * 2]; 							// STEREO tx DAC buffer
-	memset(stereo_tx_buffer, 0, sizeof(stereo_tx_buffer));	// clear buffer
-
-
-	// 1. Init Audio settings
-	SetAudioData();
-
-	// 2. Get data for thread and select temporary PDM buffer
 	AudioTaskArgs_t *args = GetAudioArgs();
 	uint16_t *pPDMdata = NULL;
-
-	// 3. Init DAC Codec
-	if (CS43L22_Init() != HAL_OK)
-		{
-		strcpy(print_buf, "Codec initialization failed\r\n");
-			HAL_UART_Transmit(args->uartHandle, (uint8_t *)print_buf, strlen(print_buf), HAL_MAX_DELAY);
-
-			// Trap thread
-			while(1){
-				osDelay(1000);
-			}
-		}
-
-	// 4. Start Codec (DMA transmission)
-	HAL_I2S_Transmit_DMA(CS43L22_I2S_HANDLE, (uint16_t *)stereo_tx_buffer, (args->pcm_buffer_size) * 2);
 
 	/* Infinite loop */
 	for(;;){
@@ -196,27 +170,11 @@ void start_pcmData(void *argument)
 			PDM_Filter(pPDMdata, args->pcm_buffer, (args->FilterHandler));
 			osSemaphoreRelease(fftPcmDataReadyHandle);
 
-			// 3. MONO -> STEREO & DAC data send (DMA in circular mode)
+			// 3. MONO -> STEREO & DAC data send (DMA in circular mode -> update is immediately done)
 			for (int i = 0; i < args->pcm_buffer_size; i++) {
-				stereo_tx_buffer[i * 2]     = args->pcm_buffer[i]; // Left
-				stereo_tx_buffer[i * 2 + 1] = args->pcm_buffer[i]; // Right
+				args -> stereo_tx_buffer[i * 2]     = args->pcm_buffer[i]; // Left
+				args -> stereo_tx_buffer[i * 2 + 1] = args->pcm_buffer[i]; // Right
 			}
-
-			//HAL_I2S_Transmit_DMA(CS43L22_I2S_HANDLE, (uint16_t *)stereo_tx_buffer, (args->pcm_buffer_size) * 2);
-
-//			if(osSemaphoreAcquire(TXuartHandle, 10) == osOK)
-//			{
-//
-//				// UART sends 8-bit chunks but my data is 16-bit chunk
-//				memcpy(uart_tx_buffer, args->pcm_buffer, (args->pcm_buffer_size) * 2);
-//
-//				// Synchronize
-//				uint16_t sync_word = 0xAAAA;
-//				HAL_UART_Transmit(args->uartHandle, (uint8_t*)&sync_word, 2, HAL_MAX_DELAY);
-//
-//				// one-shot DMA transfer
-//				HAL_UART_Transmit_DMA(args->uartHandle, (uint8_t *)uart_tx_buffer, (args->pcm_buffer_size) * 2);
-//			}
 		}
 
 	}
@@ -234,11 +192,7 @@ void start_pcmFFT(void *argument)
 {
   /* USER CODE BEGIN start_pcmFFT */
 
-	// 1. FFT Init
-	fft_Init();
 	fftArgs_t *args = GetfftArgs();
-
-
 	uint16_t fftIndex = 0;
 
 	/* Infinite loop */
@@ -270,6 +224,7 @@ void start_pcmFFT(void *argument)
 						  args -> fftBuffOut[i] = sqrtf(real + imag);
 					  }
 
+					  // 3. Send results via UART
 					  if(osSemaphoreAcquire(TXuartHandle, 10) == osOK)
 					  {
 					      uint16_t sync_word = 0xBBBB;

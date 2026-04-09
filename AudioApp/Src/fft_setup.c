@@ -3,9 +3,6 @@
 /* Required (lost pcm buffer) */
 extern uint16_t pcm_buffer[PCM_BUFFER_SIZE];
 
-// #define PCM_BUFFER_SIZE 16
-// #define FFT_BUFFER_SIZE 1024
-
 float fftBuffIn[FFT_BUFFER_SIZE];
 float fftBuffComplex[FFT_BUFFER_SIZE];
 float fftBuffOut[FFT_BUFFER_SIZE / 2];
@@ -13,11 +10,10 @@ float fftBuffOut[FFT_BUFFER_SIZE / 2];
 uint8_t fftCmplt = 0;
 
 arm_rfft_fast_instance_f32 fftHandler;
-extern UART_HandleTypeDef huart2; // Audio_pcm_from_pdm.h
+extern UART_HandleTypeDef huart2;
 
-// structure to pass
+
 fftArgs_t fftArgs = {0};
-
 
 void fft_Init(){
 
@@ -37,7 +33,6 @@ void fft_Init(){
 
 	// ... and my lost pcm buffer
 	fftArgs.source_pcm_data = pcm_buffer;
-
 }
 
 

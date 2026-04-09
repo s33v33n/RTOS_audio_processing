@@ -9,11 +9,15 @@ typedef struct{
 	uint16_t pcm_buffer_size;
 	uint16_t *pdm_buffer;
 	uint16_t *pcm_buffer;
+
+	int16_t *stereo_tx_buffer;
+
 	volatile uint8_t *pFullPdmBuffer;
-	PDM_Filter_Handler_t *filterHandler;
 	osSemaphoreId_t dataReadySem;
+
 	osSemaphoreId_t uartSem;
 	UART_HandleTypeDef *uartHandle;
+
 	PDM_Filter_Handler_t *FilterHandler;
 
 } AudioTaskArgs_t;

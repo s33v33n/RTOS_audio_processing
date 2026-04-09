@@ -1,29 +1,22 @@
 #include "AudioApp.h"
 
-// // Audio settings
-// #define AUDIO_FREQ 16000
-// #define IN_CHN 1
-// #define OUT_CHN 1
-
-// // double buffering for processing PDM data
-// #define PDM_BUFFER_SIZE 256
-
-// // only one buffer for PCM data
-// #define PCM_BUFFER_SIZE 16
-
 uint16_t pdm_buffer[PDM_BUFFER_SIZE];
 uint16_t pcm_buffer[PCM_BUFFER_SIZE];
+
+int16_t stereo_tx_buffer[PCM_BUFFER_SIZE * 2];
+
 volatile uint8_t FullPdmBuffer;
+
+extern osSemaphoreId_t pdmDataReadyHandle;
+extern osSemaphoreId_t TXuartHandle;
+
+extern UART_HandleTypeDef huart2;
 
 PDM_Filter_Handler_t PDM_FilterHandler;
 PDM_Filter_Config_t  PDM_FilterConfig;
 
+
 AudioTaskArgs_t audioArgs = {0};
-
-extern osSemaphoreId_t pdmDataReadyHandle;
-extern osSemaphoreId_t TXuartHandle;
-extern UART_HandleTypeDef huart2;
-
 
 void PDM_Init(uint32_t AudioFreq, uint32_t in_channels, uint32_t out_channels)
 {
@@ -39,8 +32,6 @@ void PDM_Init(uint32_t AudioFreq, uint32_t in_channels, uint32_t out_channels)
     PDM_FilterHandler.out_ptr_channels = out_channels;
     PDM_Filter_Init(&PDM_FilterHandler);
 
-    // PDM config phase
-    // PDM_FilterConfig.output_samples_number = (AudioFreq / 1000) * 2;
     PDM_FilterConfig.output_samples_number = PCM_BUFFER_SIZE;
     PDM_FilterConfig.mic_gain = 14;
     PDM_FilterConfig.decimation_factor = PDM_FILTER_DEC_FACTOR_64;
@@ -58,11 +49,15 @@ void SetAudioData(void){
 	audioArgs.pcm_buffer_size = PCM_BUFFER_SIZE;
 	audioArgs.pdm_buffer = pdm_buffer;
 	audioArgs.pcm_buffer = pcm_buffer;
+
+	audioArgs.stereo_tx_buffer = stereo_tx_buffer;
+
 	audioArgs.pFullPdmBuffer = &FullPdmBuffer;
-	audioArgs.filterHandler = &PDM_FilterHandler;
 	audioArgs.dataReadySem = pdmDataReadyHandle;
+
 	audioArgs.uartSem = TXuartHandle;
 	audioArgs.uartHandle = &huart2;
+
 	audioArgs.FilterHandler = &PDM_FilterHandler;
 
     // Start Microphone

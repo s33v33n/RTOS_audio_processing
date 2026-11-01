@@ -7,21 +7,15 @@ int16_t stereo_tx_buffer[TX_BUFFER_SIZE];
 
 volatile uint8_t FullPdmBuffer;
 
-extern osSemaphoreId_t pdmDataReadyHandle;
-extern osSemaphoreId_t TXuartHandle;
-
-extern UART_HandleTypeDef huart2;
-
 PDM_Filter_Handler_t PDM_FilterHandler;
 PDM_Filter_Config_t  PDM_FilterConfig;
 
 
 AudioTaskArgs_t audioArgs = {0};
 
-void PDM_Init(uint32_t AudioFreq, uint32_t in_channels, uint32_t out_channels)
+void PDM_Init(uint32_t in_channels, uint32_t out_channels)
 {
-    // Necessary to unlock PDM library
-    __HAL_RCC_CRC_CLK_ENABLE();
+    // Necessary to unlock PDM library (CRC clock enabled in MX_CRC_Init)
     CRC->CR = CRC_CR_RESET;
 
     // Init PDM filters
@@ -42,7 +36,7 @@ void PDM_Init(uint32_t AudioFreq, uint32_t in_channels, uint32_t out_channels)
 void SetAudioData(void){
 
 	// filter initialization
-	PDM_Init(AUDIO_FREQ, IN_CHN, OUT_CHN);
+	PDM_Init(IN_CHN, OUT_CHN);
 
 	// Box to pass to RTOS thread
 	audioArgs.pdm_buffer_size = PDM_BUFFER_SIZE;
@@ -53,9 +47,7 @@ void SetAudioData(void){
 	audioArgs.stereo_tx_buffer = stereo_tx_buffer;
 
 	audioArgs.pFullPdmBuffer = &FullPdmBuffer;
-	audioArgs.dataReadySem = pdmDataReadyHandle;
 
-	audioArgs.uartSem = TXuartHandle;
 	audioArgs.uartHandle = &huart2;
 
 	audioArgs.FilterHandler = &PDM_FilterHandler;

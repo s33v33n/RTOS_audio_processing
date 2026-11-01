@@ -3,10 +3,6 @@
 
 // Includes are centralized in AudioApp.h
 
-
-extern I2C_HandleTypeDef hi2c1;
-extern I2S_HandleTypeDef hi2s3;
-
 // I2C
 #define CS43L22_I2C_ADDR         	(0x4A << 1) // [7:2] - fixed to 100101 , [1] - '0' (connected to GND) , left shift for write operation
 #define CS43L22_I2C_HANDLE 			&hi2c1

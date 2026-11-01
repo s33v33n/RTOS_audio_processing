@@ -26,11 +26,5 @@ void AudioApp_Init(void){
 	// 4. Start Codec (DMA transmission)
 	HAL_I2S_Transmit_DMA(CS43L22_I2S_HANDLE, (uint16_t *)args->stereo_tx_buffer, TX_BUFFER_SIZE);
 
-
-
-
-	/* --- start_pcmFFT --- */
-
-	// 1. FFT Init
-	fft_Init();
+	// FFT is initialized in FftTask_Run()
 }

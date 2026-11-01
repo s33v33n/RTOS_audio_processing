@@ -160,33 +160,7 @@ void MX_FREERTOS_Init(void) {
 void start_pcmData(void *argument)
 {
   /* USER CODE BEGIN start_pcmData */
-
-	// My whole AudioApp initialization
-	AudioApp_Init();
-
-	AudioTaskArgs_t *args = GetAudioArgs();
-	uint16_t *pPDMdata = NULL;
-
-	/* Infinite loop */
-	for(;;){
-
-		if(osSemaphoreAcquire(pdmDataReadyHandle, osWaitForever) == osOK){
-
-			// 1. select PDM data for processing
-			pPDMdata = ( *(args->pFullPdmBuffer) == 0) ? args->pdm_buffer : &(args->pdm_buffer[ (args->pdm_buffer_size) / 2]);
-
-			// 2. and process data (MONO)
-			PDM_Filter(pPDMdata, args->pcm_buffer, (args->FilterHandler));
-      
-			// 3. Hand the block over to FFT task (queue copies the data)
-			osMessageQueuePut(pcmFftQueueHandle, args->pcm_buffer, 0, 0);
-
-			// 4. Hand the block over to the output (queue copies the data, TX callbacks consume it)
-			osMessageQueuePut(pcmTxQueueHandle, args->pcm_buffer, 0, 0);
-
-		}
-
-	}
+	AudioTask_Run();
   /* USER CODE END start_pcmData */
 }
 
@@ -200,59 +174,7 @@ void start_pcmData(void *argument)
 void start_pcmFFT(void *argument)
 {
   /* USER CODE BEGIN start_pcmFFT */
-
-	fftArgs_t *args = GetfftArgs();
-	uint16_t fftIndex = 0;
-  int16_t pcmBlock[PCM_BUFFER_SIZE];
-
-
-	/* Infinite loop */
-	  for(;;)
-	  {
-		  	if(osMessageQueueGet(pcmFftQueueHandle, pcmBlock, NULL, osWaitForever) == osOK){
-
-			  // Filling the FFT buffer
-			  for(uint16_t i = 0; i < PCM_BUFFER_SIZE; i++){
-				  args -> fftBuffIn[fftIndex] = (float)pcmBlock[i];
-				  fftIndex++;
-
-
-				  /* When FFT buffer is full -> count FFT
-				   * FFT is computed in MONO format - doesn't need to
-				   * get rid of doubled samples
-				   * */
-				  if(fftIndex >= (args -> fft_buffer_size)){
-
-					  // 1. Calculate fft values (input: read audio data, output: complex number)
-					  arm_rfft_fast_f32(args -> fftHandler, args -> fftBuffIn, args -> fftComplex, 0);
-
-					  // 2. Calculate Magnitude from complex samples
-					  for(uint16_t i=0; i < (args -> fft_buffer_size) / 2; i++){
-
-						  float real = args -> fftComplex[2*i] * args -> fftComplex[2 *i];
-						  float imag = args -> fftComplex[2*i + 1] * args -> fftComplex[2 *i + 1];
-
-						  args -> fftBuffOut[i] = sqrtf(real + imag);
-					  }
-
-					  // 3. Send results via UART
-					  if(osSemaphoreAcquire(TXuartHandle, 10) == osOK)
-					  {
-					      uint16_t sync_word = 0xBBBB;
-					      HAL_UART_Transmit(args->uartHandle, (uint8_t*)&sync_word, 2, HAL_MAX_DELAY);
-
-					      uint16_t bytes_to_send = ((args->fft_buffer_size) / 2) * sizeof(float);
-
-					      HAL_UART_Transmit_DMA(args->uartHandle, (uint8_t *)(args->fftBuffOut), bytes_to_send);
-					  }
-
-					  fftIndex = 0;
-				  }
-			 }
-
-		  }
-
-	  }
+	FftTask_Run();
   /* USER CODE END start_pcmFFT */
 }
 

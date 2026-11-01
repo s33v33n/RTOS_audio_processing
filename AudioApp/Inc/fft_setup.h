@@ -4,6 +4,12 @@
 // Includes are centralized in AudioApp.h
 
 
+// One UART frame: sync word + magnitude spectrum (sent in a single DMA transfer)
+typedef struct{
+	uint32_t sync;
+	float mag[FFT_BUFFER_SIZE / 2];
+} fftFrame_t;
+
 // Box to be passed to thread
 typedef struct{
 
@@ -11,8 +17,8 @@ typedef struct{
 	uint16_t fft_buffer_size;
 	float *fftBuffIn;
 	float *fftComplex;
-	float *fftBuffOut;
-	uint8_t fftCmplt;
+	const float *window;
+	fftFrame_t *frame;
 	arm_rfft_fast_instance_f32 *fftHandler;
 	UART_HandleTypeDef *uartHandle;
 

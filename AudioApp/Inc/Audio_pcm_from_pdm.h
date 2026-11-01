@@ -13,9 +13,7 @@ typedef struct{
 	int16_t *stereo_tx_buffer;
 
 	volatile uint8_t *pFullPdmBuffer;
-	osSemaphoreId_t dataReadySem;
 
-	osSemaphoreId_t uartSem;
 	UART_HandleTypeDef *uartHandle;
 
 	PDM_Filter_Handler_t *FilterHandler;
@@ -24,7 +22,7 @@ typedef struct{
 
 
 // Init library to process PDM data
-void PDM_Init(uint32_t AudioFreq, uint32_t in_channels, uint32_t out_channels);
+void PDM_Init(uint32_t in_channels, uint32_t out_channels);
 
 void SetAudioData(void);
 

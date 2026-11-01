@@ -17,7 +17,7 @@ typedef struct{
 	UART_HandleTypeDef *uartHandle;
 
 	// ... and my PCM data
-	uint16_t *source_pcm_data;
+	int16_t *source_pcm_data;
 
 } fftArgs_t;
 

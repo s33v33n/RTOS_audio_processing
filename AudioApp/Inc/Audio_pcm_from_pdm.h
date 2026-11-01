@@ -8,7 +8,7 @@ typedef struct{
 	uint16_t pdm_buffer_size;
 	uint16_t pcm_buffer_size;
 	uint16_t *pdm_buffer;
-	uint16_t *pcm_buffer;
+	int16_t *pcm_buffer;
 
 	int16_t *stereo_tx_buffer;
 

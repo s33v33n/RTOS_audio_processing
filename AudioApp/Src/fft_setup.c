@@ -1,7 +1,7 @@
 #include "AudioApp.h"
 
 /* Required (lost pcm buffer) */
-extern uint16_t pcm_buffer[PCM_BUFFER_SIZE];
+extern int16_t pcm_buffer[PCM_BUFFER_SIZE];
 
 float fftBuffIn[FFT_BUFFER_SIZE];
 float fftBuffComplex[FFT_BUFFER_SIZE];

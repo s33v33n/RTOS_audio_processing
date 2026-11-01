@@ -62,6 +62,11 @@ const osThreadAttr_t pcmFFT_attributes = {
   .stack_size = 1024 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
+/* Definitions for pcmTxQueue */
+osMessageQueueId_t pcmTxQueueHandle;
+const osMessageQueueAttr_t pcmTxQueue_attributes = {
+  .name = "pcmTxQueue"
+};
 /* Definitions for pdmDataReady */
 osSemaphoreId_t pdmDataReadyHandle;
 const osSemaphoreAttr_t pdmDataReady_attributes = {
@@ -120,6 +125,10 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
+  /* Create the queue(s) */
+  /* creation of pcmTxQueue */
+  pcmTxQueueHandle = osMessageQueueNew (3, 256, &pcmTxQueue_attributes);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
@@ -170,11 +179,8 @@ void start_pcmData(void *argument)
 			PDM_Filter(pPDMdata, args->pcm_buffer, (args->FilterHandler));
 			osSemaphoreRelease(fftPcmDataReadyHandle);
 
-			// 3. MONO -> STEREO & DAC data send (DMA in circular mode -> update is immediately done)
-			for (int i = 0; i < args->pcm_buffer_size; i++) {
-				args -> stereo_tx_buffer[i * 2]     = args->pcm_buffer[i]; // Left
-				args -> stereo_tx_buffer[i * 2 + 1] = args->pcm_buffer[i]; // Right
-			}
+			// 3. Hand the block over to the output (queue copies the data, TX callbacks consume it)
+			osMessageQueuePut(pcmTxQueueHandle, args->pcm_buffer, 0, 0);
 		}
 
 	}
@@ -202,7 +208,7 @@ void start_pcmFFT(void *argument)
 
 			  // Filling the FFT buffer
 			  for(uint8_t i=0; i < args -> pcm_buffer_size; i++){
-				  args -> fftBuffIn[fftIndex] = (float)((int16_t)args -> source_pcm_data[i]);
+				  args -> fftBuffIn[fftIndex] = (float)args -> source_pcm_data[i];
 				  fftIndex++;
 
 

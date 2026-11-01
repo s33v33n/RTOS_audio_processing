@@ -52,7 +52,8 @@ HAL_StatusTypeDef CS43L22_Init(void){
 			0x01, // 0x02: Keep powered down until magic sequence is done
 			0xAF, // 0x04: Headphones ON, Speaker OFF
 			0x81, // 0x05: Auto-detect clock, MCLK divided by 2
-			0x04, // 0x06: Slave mode, I2S Philips Standard, 16-bit
+			0x24,
+			//0x04, // 0x06: Slave mode, I2S Philips Standard, 16-bit
 			0x00, // 0x0A: Disable Zero-Cross
 			0x00, // 0x27: Disable Limiter
 			0x0A, // 0x1A: PCM Vol A (0 dB)

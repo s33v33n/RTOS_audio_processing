@@ -34,16 +34,14 @@
 // NEW
 #define PDM_DECIMATION_FACTOR   64
 
-#define PDM_BUFFER_SIZE 256     // double buffering for processing PDM data
+#define PDM_BUFFER_SIZE 1024     // double buffering for processing PDM data
 
-// NEW
 #define PCM_BUFFER_SIZE  (((PDM_BUFFER_SIZE / 2) * 16) / PDM_DECIMATION_FACTOR)
-//#define PCM_BUFFER_SIZE 16      // only one buffer for PCM data
 
 
 // -- FFT --
 #define FFT_BUFFER_SIZE 1024
-
+#define TX_BUFFER_SIZE  (PCM_BUFFER_SIZE * 2 * 2)   // stereo × 2 halves (ping-pong)
 
 
 // -- General -- 

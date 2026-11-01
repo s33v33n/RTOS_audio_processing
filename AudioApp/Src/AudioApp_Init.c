@@ -24,7 +24,8 @@ void AudioApp_Init(void){
 		}
 
 	// 4. Start Codec (DMA transmission)
-	HAL_I2S_Transmit_DMA(CS43L22_I2S_HANDLE, (uint16_t *)args -> stereo_tx_buffer, (args->pcm_buffer_size) * 2);
+	HAL_I2S_Transmit_DMA(CS43L22_I2S_HANDLE, (uint16_t *)args->stereo_tx_buffer, TX_BUFFER_SIZE);
+
 
 
 

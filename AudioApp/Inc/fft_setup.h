@@ -16,9 +16,6 @@ typedef struct{
 	arm_rfft_fast_instance_f32 *fftHandler;
 	UART_HandleTypeDef *uartHandle;
 
-	// ... and my PCM data
-	int16_t *source_pcm_data;
-
 } fftArgs_t;
 
 void fft_Init(void);

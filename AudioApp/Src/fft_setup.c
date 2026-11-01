@@ -1,7 +1,5 @@
 #include "AudioApp.h"
 
-/* Required (lost pcm buffer) */
-extern int16_t pcm_buffer[PCM_BUFFER_SIZE];
 
 float fftBuffIn[FFT_BUFFER_SIZE];
 float fftBuffComplex[FFT_BUFFER_SIZE];
@@ -30,9 +28,6 @@ void fft_Init(){
 	fftArgs.fftCmplt = fftCmplt;
 	fftArgs.fftHandler = &fftHandler;
 	fftArgs.uartHandle = &huart2;
-
-	// ... and my lost pcm buffer
-	fftArgs.source_pcm_data = pcm_buffer;
 }
 
 

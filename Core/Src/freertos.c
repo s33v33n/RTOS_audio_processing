@@ -67,6 +67,11 @@ osMessageQueueId_t pcmTxQueueHandle;
 const osMessageQueueAttr_t pcmTxQueue_attributes = {
   .name = "pcmTxQueue"
 };
+/* Definitions for pcmFftQueue */
+osMessageQueueId_t pcmFftQueueHandle;
+const osMessageQueueAttr_t pcmFftQueue_attributes = {
+  .name = "pcmFftQueue"
+};
 /* Definitions for pdmDataReady */
 osSemaphoreId_t pdmDataReadyHandle;
 const osSemaphoreAttr_t pdmDataReady_attributes = {
@@ -76,11 +81,6 @@ const osSemaphoreAttr_t pdmDataReady_attributes = {
 osSemaphoreId_t TXuartHandle;
 const osSemaphoreAttr_t TXuart_attributes = {
   .name = "TXuart"
-};
-/* Definitions for fftPcmDataReady */
-osSemaphoreId_t fftPcmDataReadyHandle;
-const osSemaphoreAttr_t fftPcmDataReady_attributes = {
-  .name = "fftPcmDataReady"
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -109,13 +109,10 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the semaphores(s) */
   /* creation of pdmDataReady */
-  pdmDataReadyHandle = osSemaphoreNew(1, 1, &pdmDataReady_attributes);
+  pdmDataReadyHandle = osSemaphoreNew(1, 0, &pdmDataReady_attributes);
 
   /* creation of TXuart */
   TXuartHandle = osSemaphoreNew(1, 1, &TXuart_attributes);
-
-  /* creation of fftPcmDataReady */
-  fftPcmDataReadyHandle = osSemaphoreNew(1, 1, &fftPcmDataReady_attributes);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
@@ -128,6 +125,9 @@ void MX_FREERTOS_Init(void) {
   /* Create the queue(s) */
   /* creation of pcmTxQueue */
   pcmTxQueueHandle = osMessageQueueNew (3, 256, &pcmTxQueue_attributes);
+
+  /* creation of pcmFftQueue */
+  pcmFftQueueHandle = osMessageQueueNew (4, 256, &pcmFftQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -177,10 +177,13 @@ void start_pcmData(void *argument)
 
 			// 2. and process data (MONO)
 			PDM_Filter(pPDMdata, args->pcm_buffer, (args->FilterHandler));
-			osSemaphoreRelease(fftPcmDataReadyHandle);
+      
+			// 3. Hand the block over to FFT task (queue copies the data)
+			osMessageQueuePut(pcmFftQueueHandle, args->pcm_buffer, 0, 0);
 
-			// 3. Hand the block over to the output (queue copies the data, TX callbacks consume it)
+			// 4. Hand the block over to the output (queue copies the data, TX callbacks consume it)
 			osMessageQueuePut(pcmTxQueueHandle, args->pcm_buffer, 0, 0);
+
 		}
 
 	}
@@ -200,15 +203,17 @@ void start_pcmFFT(void *argument)
 
 	fftArgs_t *args = GetfftArgs();
 	uint16_t fftIndex = 0;
+  int16_t pcmBlock[PCM_BUFFER_SIZE];
+
 
 	/* Infinite loop */
 	  for(;;)
 	  {
-		  if(osSemaphoreAcquire(fftPcmDataReadyHandle, osWaitForever) == osOK){
+		  	if(osMessageQueueGet(pcmFftQueueHandle, pcmBlock, NULL, osWaitForever) == osOK){
 
 			  // Filling the FFT buffer
-			  for(uint8_t i=0; i < args -> pcm_buffer_size; i++){
-				  args -> fftBuffIn[fftIndex] = (float)args -> source_pcm_data[i];
+			  for(uint16_t i = 0; i < PCM_BUFFER_SIZE; i++){
+				  args -> fftBuffIn[fftIndex] = (float)pcmBlock[i];
 				  fftIndex++;
 
 

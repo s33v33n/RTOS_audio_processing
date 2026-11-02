@@ -62,6 +62,13 @@ const osThreadAttr_t pcmFFT_attributes = {
   .stack_size = 1024 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
+/* Definitions for wdgTask */
+osThreadId_t wdgTaskHandle;
+const osThreadAttr_t wdgTask_attributes = {
+  .name = "wdgTask",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
 /* Definitions for pcmTxQueue */
 osMessageQueueId_t pcmTxQueueHandle;
 const osMessageQueueAttr_t pcmTxQueue_attributes = {
@@ -82,6 +89,11 @@ osSemaphoreId_t TXuartHandle;
 const osSemaphoreAttr_t TXuart_attributes = {
   .name = "TXuart"
 };
+/* Definitions for wdgEvents */
+osEventFlagsId_t wdgEventsHandle;
+const osEventFlagsAttr_t wdgEvents_attributes = {
+  .name = "wdgEvents"
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -90,6 +102,7 @@ const osSemaphoreAttr_t TXuart_attributes = {
 
 void start_pcmData(void *argument);
 void start_pcmFFT(void *argument);
+void start_wdgTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -140,9 +153,16 @@ void MX_FREERTOS_Init(void) {
   /* creation of pcmFFT */
   pcmFFTHandle = osThreadNew(start_pcmFFT, NULL, &pcmFFT_attributes);
 
+  /* creation of wdgTask */
+  wdgTaskHandle = osThreadNew(start_wdgTask, NULL, &wdgTask_attributes);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
+
+  /* Create the event(s) */
+  /* creation of wdgEvents */
+  wdgEventsHandle = osEventFlagsNew(&wdgEvents_attributes);
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
@@ -176,6 +196,20 @@ void start_pcmFFT(void *argument)
   /* USER CODE BEGIN start_pcmFFT */
 	FftTask_Run();
   /* USER CODE END start_pcmFFT */
+}
+
+/* USER CODE BEGIN Header_start_wdgTask */
+/**
+* @brief Function implementing the wdgTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_start_wdgTask */
+void start_wdgTask(void *argument)
+{
+  /* USER CODE BEGIN start_wdgTask */
+  WdgTask_Run();
+  /* USER CODE END start_wdgTask */
 }
 
 /* Private application code --------------------------------------------------*/

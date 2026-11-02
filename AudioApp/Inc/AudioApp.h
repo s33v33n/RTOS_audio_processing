@@ -39,6 +39,13 @@
 _Static_assert(FFT_BUFFER_SIZE % PCM_BUFFER_SIZE == 0, "FFT size must be a multiple of the PCM block");
 
 
+// -- Watchdog 
+#define WGD_AUDIO_BIT   (1U << 0) 
+#define WGD_FFT_BIT     (1U << 1) 
+#define WGD_ALL_BITS    (WGD_AUDIO_BIT | WGD_FFT_BIT)
+#define WGD_CHECK_MS    200 
+
+
 // -- General -- 
 #define ONE_BYTE 1
 
@@ -50,11 +57,13 @@ extern I2S_HandleTypeDef  hi2s2;    // MP45DT02 microphone (PDM in)
 extern I2S_HandleTypeDef  hi2s3;    // CS43L22 codec (audio out)
 extern I2C_HandleTypeDef  hi2c1;    // CS43L22 control
 extern UART_HandleTypeDef huart2;   // FFT frames -> PC
+extern IWDG_HandleTypeDef hiwdg;    // Iwatchdog
 
 extern osSemaphoreId_t    pdmDataReadyHandle;
 extern osSemaphoreId_t    TXuartHandle;
 extern osMessageQueueId_t pcmTxQueueHandle;
 extern osMessageQueueId_t pcmFftQueueHandle;
+extern osEventFlagsId_t   wdgEventsHandle;
 
 
 /* ----------------------------------------------------
@@ -72,5 +81,6 @@ extern osMessageQueueId_t pcmFftQueueHandle;
 void AudioApp_Init(void);
 void AudioTask_Run(void);
 void FftTask_Run(void);
+void WdgTask_Run(void);
 
 #endif /*AUDIO_APP_H*/

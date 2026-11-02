@@ -23,6 +23,7 @@
 #include "dma.h"
 #include "i2c.h"
 #include "i2s.h"
+#include "iwdg.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -104,10 +105,22 @@ int main(void)
   MX_I2S3_Init();
   MX_I2C1_Init();
   MX_USART2_UART_Init();
+  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
 
   char test_string[] = "Hello from UART\r\n";
   HAL_UART_Transmit(&huart2, (uint8_t *)test_string, strlen(test_string), HAL_MAX_DELAY);
+ 
+  // avoid watchdog resets while debugging
+  __HAL_DBGMCU_FREEZE_IWDG();
+
+  // MCU restarted by watchdog
+  if (__HAL_RCC_GET_FLAG(RCC_FLAG_IWDGRST))
+  {
+    char wdg_msg[] = "Reset by watchdog\r\n";
+    HAL_UART_Transmit(&huart2, (uint8_t *)wdg_msg, strlen(wdg_msg), HAL_MAX_DELAY);
+  }
+  __HAL_RCC_CLEAR_RESET_FLAGS();
 
   /* USER CODE END 2 */
 
@@ -148,8 +161,9 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 4;

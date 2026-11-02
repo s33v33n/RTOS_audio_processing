@@ -1,6 +1,5 @@
 #include "AudioApp.h"
 
-
 // pcmData thread
 void AudioTask_Run(void)
 {
@@ -12,6 +11,9 @@ void AudioTask_Run(void)
 
 	/* Infinite loop */
 	for(;;){
+
+		// events bits wdg
+		osEventFlagsSet(wdgEventsHandle, WGD_AUDIO_BIT);
 
 		if(osSemaphoreAcquire(pdmDataReadyHandle, osWaitForever) == osOK){
 
@@ -47,44 +49,62 @@ void FftTask_Run(void)
 
 
 	/* Infinite loop */
-	  for(;;)
-	  {
-		  if(osMessageQueueGet(pcmFftQueueHandle, pcmBlock, NULL, osWaitForever) == osOK){
+	for(;;)
+	{         
+		//event bits wdg                   
+		osEventFlagsSet(wdgEventsHandle, WGD_FFT_BIT);
 
-			  // Filling the FFT buffer
-			  for(uint16_t i = 0; i < PCM_BUFFER_SIZE; i++){
-				  args -> fftBuffIn[fftIndex] = (float)pcmBlock[i] * args -> window[fftIndex];
-				  fftIndex++;
+		if(osMessageQueueGet(pcmFftQueueHandle, pcmBlock, NULL, osWaitForever) == osOK){
+
+			// Filling the FFT buffer
+			for(uint16_t i = 0; i < PCM_BUFFER_SIZE; i++){
+				args -> fftBuffIn[fftIndex] = (float)pcmBlock[i] * args -> window[fftIndex];
+				fftIndex++;
 
 
-				  /* When FFT buffer is full -> count FFT
-				   * FFT is computed in MONO format - doesn't need to
-				   * get rid of doubled samples
-				   * */
-				  if(fftIndex >= (args -> fft_buffer_size)){
+				/* When FFT buffer is full -> count FFT
+				* FFT is computed in MONO format - doesn't need to
+				* get rid of doubled samples
+				* */
+				if(fftIndex >= (args -> fft_buffer_size)){
 
-					  // 1. Calculate fft values (input: read audio data, output: complex number)
-					  arm_rfft_fast_f32(args -> fftHandler, args -> fftBuffIn, args -> fftComplex, 0);
+					// 1. Calculate fft values (input: read audio data, output: complex number)
+					arm_rfft_fast_f32(args -> fftHandler, args -> fftBuffIn, args -> fftComplex, 0);
 
-					  // 2. Skip this frame if UART DMA is still sending the previous one
-					  if(osSemaphoreAcquire(TXuartHandle, 0) == osOK)
-					  {
-						  // 3. Calculate Magnitude from complex samples ([0] = DC, [1] = Nyquist)
-						  arm_cmplx_mag_f32(args -> fftComplex, args -> frame -> mag, (args -> fft_buffer_size) / 2);
-						  args -> frame -> mag[0] = fabsf(args -> fftComplex[0]);
-						  arm_scale_f32(args -> frame -> mag, scale, args -> frame -> mag, (args -> fft_buffer_size) / 2);
+					// 2. Skip this frame if UART DMA is still sending the previous one
+					if(osSemaphoreAcquire(TXuartHandle, 0) == osOK)
+					{
+						// 3. Calculate Magnitude from complex samples ([0] = DC, [1] = Nyquist)
+						arm_cmplx_mag_f32(args -> fftComplex, args -> frame -> mag, (args -> fft_buffer_size) / 2);
+						args -> frame -> mag[0] = fabsf(args -> fftComplex[0]);
+						arm_scale_f32(args -> frame -> mag, scale, args -> frame -> mag, (args -> fft_buffer_size) / 2);
 
-						  // 4. Send results via UART (sync + spectrum in one DMA transfer)
-						  if(HAL_UART_Transmit_DMA(args->uartHandle, (uint8_t *)(args->frame), sizeof(fftFrame_t)) != HAL_OK){
-							  osSemaphoreRelease(TXuartHandle);
-						  }
-					  }
+						// 4. Send results via UART (sync + spectrum in one DMA transfer)
+						if(HAL_UART_Transmit_DMA(args->uartHandle, (uint8_t *)(args->frame), sizeof(fftFrame_t)) != HAL_OK){
+							osSemaphoreRelease(TXuartHandle);
+						}
+					}
 
-					  fftIndex = 0;
-				  }
-			 }
+					fftIndex = 0;
+				}
+			}
 
-		  }
+		}
 
-	  }
+	}
+}
+
+void WdgTask_Run(void){
+
+	for(;;){
+		osDelay(WGD_CHECK_MS);
+
+		uint32_t flags = osEventFlagsWait(wdgEventsHandle, WGD_ALL_BITS, osFlagsWaitAll, 0);
+
+		// only 2 events
+		if(flags == WGD_ALL_BITS){
+			HAL_IWDG_Refresh(&hiwdg);
+		}
+		// else iwdg not refresh -> reset MCU
+	}
 }

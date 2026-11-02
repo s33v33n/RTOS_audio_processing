@@ -10,9 +10,6 @@
 //I2S
 #define CS43L22_I2S_HANDLE 			&hi2s3
 
-// Device ID
-#define CS43L22_REG_ID           	0xE0 // [7:3] - fixed to 11100 , [2:0] - reserved
-
 
 HAL_StatusTypeDef CS43L22_RegWrite(uint8_t regAddr, uint8_t regData);
 HAL_StatusTypeDef CS43L22_RegRead(uint8_t regAddr, uint8_t *regData);

@@ -22,7 +22,6 @@ void fft_Init(){
 		fftWindow[n] = 0.5f - 0.5f * cosf(2.0f * PI * n / (FFT_BUFFER_SIZE - 1));
 	}
 
-	fftArgs.pcm_buffer_size = PCM_BUFFER_SIZE;
 	fftArgs.fft_buffer_size = FFT_BUFFER_SIZE;
 
 	fftArgs.fftBuffIn = fftBuffIn;

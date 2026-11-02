@@ -21,10 +21,10 @@
  * ---------------------------------------------------- */
 
 
-// -- Audio settings -- 
+// -- Audio settings --
 #define AUDIO_FREQ 16000    // Hz
-#define IN_CHN 1            // DAC
-#define OUT_CHN 1           // DAC
+#define IN_CHN 1            // PDM input channels
+#define OUT_CHN 1           // PCM output channels
 
 #define PDM_DECIMATION_FACTOR   64
 #define PDM_BUFFER_SIZE 1024     // double buffering for processing PDM data
@@ -39,14 +39,14 @@
 _Static_assert(FFT_BUFFER_SIZE % PCM_BUFFER_SIZE == 0, "FFT size must be a multiple of the PCM block");
 
 
-// -- Watchdog 
-#define WGD_AUDIO_BIT   (1U << 0) 
-#define WGD_FFT_BIT     (1U << 1) 
+// -- Watchdog --
+#define WGD_AUDIO_BIT   (1U << 0)
+#define WGD_FFT_BIT     (1U << 1)
 #define WGD_ALL_BITS    (WGD_AUDIO_BIT | WGD_FFT_BIT)
-#define WGD_CHECK_MS    200 
+#define WGD_CHECK_MS    200
 
 
-// -- General -- 
+// -- General --
 #define ONE_BYTE 1
 
 

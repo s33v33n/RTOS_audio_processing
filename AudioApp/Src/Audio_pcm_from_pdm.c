@@ -40,7 +40,6 @@ void SetAudioData(void){
 
 	// Box to pass to RTOS thread
 	audioArgs.pdm_buffer_size = PDM_BUFFER_SIZE;
-	audioArgs.pcm_buffer_size = PCM_BUFFER_SIZE;
 	audioArgs.pdm_buffer = pdm_buffer;
 	audioArgs.pcm_buffer = pcm_buffer;
 

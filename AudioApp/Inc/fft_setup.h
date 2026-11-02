@@ -13,7 +13,6 @@ typedef struct{
 // Box to be passed to thread
 typedef struct{
 
-	uint16_t pcm_buffer_size;
 	uint16_t fft_buffer_size;
 	float *fftBuffIn;
 	float *fftComplex;

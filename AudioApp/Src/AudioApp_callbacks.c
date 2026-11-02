@@ -5,19 +5,12 @@ extern volatile uint8_t FullPdmBuffer;
 extern int16_t stereo_tx_buffer[TX_BUFFER_SIZE];
 static int16_t txBlock[PCM_BUFFER_SIZE];
 
-volatile uint32_t pdmOverrunCount = 0;   // lost PDM blocks
-
 
 // I2S double buffer for receiving HALF microphone data
 void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 {
     if (hi2s->Instance == SPI2)
     {
-        if (osSemaphoreGetCount(pdmDataReadyHandle) > 0)
-        {
-            pdmOverrunCount++;
-        }
-
         FullPdmBuffer = 0;
         osSemaphoreRelease(pdmDataReadyHandle);
     }
@@ -28,11 +21,6 @@ void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
     if (hi2s->Instance == SPI2)
     {
-        if (osSemaphoreGetCount(pdmDataReadyHandle) > 0)
-        {
-            pdmOverrunCount++;
-        }
-
         FullPdmBuffer = 1;
         osSemaphoreRelease(pdmDataReadyHandle);
     }
